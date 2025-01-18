@@ -37,7 +37,7 @@ python scripts/detect_faces.py <VIDEO_FILE>
 This creates a JSON annotation file with the same name as ```<VIDEO_FILE>```.
 The annotations follow this structure:
 
-```json
+```
 {
     "0": {  # Face with ID 0
         "0": {  # First frame of the video
