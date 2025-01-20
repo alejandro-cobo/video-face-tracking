@@ -1,18 +1,24 @@
-FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
-
+FROM nvcr.io/nvidia/driver:525.60.13-ubuntu22.04
 WORKDIR /usr/src/app
-
-RUN apt update && apt install -y python3 python3-pip ffmpeg libsm6 libxext6 wget unzip
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-RUN wget https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip -P /root/.insightface/models \
-    && unzip /root/.insightface/models/buffalo_l.zip -d /root/.insightface/models/buffalo_l \
-    && rm /root/.insightface/models/buffalo_l.zip && apt-get remove -y wget unzip
-
-COPY src/ ./src
-COPY scripts/ ./scripts
-
-ENTRYPOINT ["/usr/bin/python3", "scripts/detect_faces.py"]
-CMD ["--help"]
+ENV HOME=/usr/src/app
+COPY requirements.txt setup_cuda.sh ./
+COPY src/ src/
+COPY scripts/ scripts/
+RUN apt update && apt install -y python3 python3-pip ffmpeg libsm6 libxext6 wget unzip && \
+    pip install --no-cache -r requirements.txt && \
+    rm requirements.txt && \
+    wget https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip -P /usr/src/app/.insightface/models && \
+    unzip /usr/src/app/.insightface/models/buffalo_l.zip -d /usr/src/app/.insightface/models/buffalo_l && \
+    rm /usr/src/app/.insightface/models/buffalo_l.zip && \
+    apt-get remove -y wget unzip && \
+    apt-get clean autoclean && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/* && \
+    printf '#!/bin/bash\nsource setup_cuda.sh\n/usr/bin/python3 scripts/detect_faces.py $@' > run.sh && \
+    chmod +x run.sh && \
+    useradd -m appuser && \
+    chown -R appuser /usr/src/app
+USER appuser
+ENTRYPOINT [ "/usr/src/app/run.sh" ]
+CMD [ "--help" ]
 

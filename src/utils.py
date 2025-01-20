@@ -23,7 +23,7 @@ def draw_face_anns(image: np.ndarray, face_ann: dict[str, Any], face_idx: str) -
     return canvas
 
 
-def put_text_with_background(image: np.ndarray, label: str, bbox: list[int]):
+def put_text_with_background(image: np.ndarray, label: str, bbox: list[int]) -> np.ndarray:
     canvas = image.copy()
 
     (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 2.0, 2)

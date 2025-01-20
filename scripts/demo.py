@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 import sys
 
@@ -15,17 +16,30 @@ sys.path.remove(ROOT_PATH)
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser("Video face tracking demo to visualize detections.")
     parser.add_argument('filename', type=str, help='Path to a video file.')
+    parser.add_argument(
+        '--ann-path',
+        '-a',
+        type=str,
+        help='Path to a JSON file containing pre-computed annotations. This skips the face detection step.'
+    )
     args = parser.parse_args(argv)
     return args
 
 
 def main(argv: list[str]) -> None:
     args = parse_args(argv)
-    tracker = FaceTracker()
-    faces = tracker(args.filename)
+    filename = args.filename
+    ann_path = args.ann_path
+
+    if ann_path is None:
+        tracker = FaceTracker()
+        faces = tracker(filename)
+    else:
+        with open(ann_path, 'r') as ann_file:
+            faces = json.load(ann_file)
 
     print("Showing video. Press 'q' on the window to stop video playback.")
-    with Video(args.filename) as video:
+    with Video(filename) as video:
         delay = int(1000 / video.fps)
         for frame_idx in range(video.num_frames):
             frame_idx_str = str(frame_idx)

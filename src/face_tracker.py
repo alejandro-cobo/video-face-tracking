@@ -20,57 +20,50 @@ class FaceTracker:
         self.app.prepare(ctx_id=0, det_size=(640, 640))
 
     def __call__(self, filename: str, max_frames: int | None = None, quiet: bool = False) -> dict[str, FaceAnnotation]:
-        video_anns = {}
-        with Video(filename, max_frames=max_frames) as video:
-            for frame_idx in tqdm(range(video.num_frames), desc='Processing video', leave=False, disable=quiet):
-                frame = video.read()
-                faces = self.app.get(frame)
-                video_anns[str(frame_idx)] = faces
-
-        if len(video_anns) == 0:
-            return {}
-
         last_boxes = None
         last_classes = None
         face_anns = {}
         face_emb = {}
-        for frame_idx, faces in tqdm(video_anns.items(), desc='Generating annotations', leave=False, disable=quiet):
-            curr_boxes = []
-            curr_classes = []
+        with Video(filename, max_frames=max_frames) as video:
+            for frame_idx in tqdm(range(video.num_frames), desc='Processing video', leave=False, disable=quiet):
+                curr_boxes = []
+                curr_classes = []
 
-            for face_idx, face in enumerate(faces):
-                if face.det_score < self.det_thresh:
-                    continue
-                face_dict = {
-                    'bbox': face.bbox.tolist(),
-                    'prob': float(face.det_score),
-                    'landmarks': face.kps.flatten().tolist()
-                }
+                frame = video.read()
+                faces = self.app.get(frame)
+                for face_idx, face in enumerate(faces):
+                    if face.det_score < self.det_thresh:
+                        continue
+                    face_dict = {
+                        'bbox': face.bbox.tolist(),
+                        'prob': float(face.det_score),
+                        'landmarks': face.kps.flatten().tolist()
+                    }
 
-                if last_boxes is None:
-                    final_class = str(face_idx)
-                    face_anns[final_class] = {str(frame_idx): face_dict}
-                    face_emb[final_class] = face.embedding
-                else:
-                    box_idx_min, box_dist = self.boxes_get_min_dist(face.bbox, last_boxes)
-                    box_dist = box_dist / max(face.bbox[[2, 3]] - face.bbox[[0, 1]])
-                    face_class, emb_dist = self.emb_get_min_cos_sim(face.embedding, face_emb)
-
-                    if box_dist < self.box_disp_thresh:
-                        final_class = str(last_classes[box_idx_min])
-                    elif emb_dist < self.cos_sim_thresh:
-                        final_class = face_class
-                    else:
-                        final_class = str(len(face_anns))
+                    if last_boxes is None:
+                        final_class = str(face_idx)
+                        face_anns[final_class] = {str(frame_idx): face_dict}
                         face_emb[final_class] = face.embedding
-                    face_anns.setdefault(final_class, {})[frame_idx] = face_dict
+                    else:
+                        box_idx_min, box_dist = self.boxes_get_min_dist(face.bbox, last_boxes)
+                        box_dist = box_dist / max(face.bbox[[2, 3]] - face.bbox[[0, 1]])
+                        face_class, emb_dist = self.emb_get_min_cos_sim(face.embedding, face_emb)
 
-                curr_boxes.append(face.bbox)
-                curr_classes.append(final_class)
+                        if box_dist < self.box_disp_thresh:
+                            final_class = str(last_classes[box_idx_min])
+                        elif emb_dist < self.cos_sim_thresh:
+                            final_class = face_class
+                        else:
+                            final_class = str(len(face_anns))
+                            face_emb[final_class] = face.embedding
+                        face_anns.setdefault(final_class, {})[str(frame_idx)] = face_dict
 
-            if len(curr_boxes) > 0:
-                last_boxes = np.array(curr_boxes)
-                last_classes = curr_classes
+                    curr_boxes.append(face.bbox)
+                    curr_classes.append(final_class)
+
+                if len(curr_boxes) > 0:
+                    last_boxes = np.array(curr_boxes)
+                    last_classes = curr_classes
 
         return face_anns
 
