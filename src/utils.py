@@ -28,7 +28,7 @@ def put_text_with_background(image: np.ndarray, label: str, bbox: list[int]) -> 
 
     (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 2.0, 2)
     x1, y1, x2, y2 = bbox
-    x = x1
+    x = max(0, min(canvas.shape[1] - w, x1))
     y = y1 - h - 10
     if y < 0:
         y = y2

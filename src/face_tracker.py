@@ -11,8 +11,54 @@ __all__ = ['FaceTracker']
 FaceAnnotation = dict[str, dict[str, Any]]
 
 
+class FaceEmbeddings:
+    """ Utility class to store face embeddings """
+    def __init__(self) -> None:
+        self.face_embeddings = dict()
+        self.last_bbox = dict()
+
+    def __len__(self) -> int:
+        return len(self.face_embeddings)
+
+    def add(self, face_id: str, bbox: np.ndarray, emb: np.ndarray) -> None:
+        self.face_embeddings.setdefault(face_id, []).append(emb)
+        self.last_bbox[face_id] = bbox
+
+    def get_embedding(self, face_id: str) -> np.ndarray:
+        if face_id not in self.face_embeddings:
+            raise RuntimeError(f'Face ID not found: {face_id}')
+        return np.mean(np.stack(self.face_embeddings[face_id]), axis=0)
+
+    def get_cos_sim(self, face_id: str, emb: np.ndarray) -> float:
+        ref_emb = self.get_embedding(face_id)
+        dot_product = np.matmul(ref_emb, emb)
+        magnitude_emb = np.linalg.norm(emb)
+        magnitude_ref_emb = np.linalg.norm(ref_emb)
+        return 1 - dot_product / (magnitude_emb * magnitude_ref_emb)
+
+    def get_closest_face(self, emb: np.ndarray) -> tuple[str, float]:
+        ref_emb = np.stack([self.get_embedding(face_id) for face_id in self.face_embeddings])
+        dot_product = np.matmul(ref_emb, emb)
+        magnitude_emb = np.linalg.norm(emb)
+        magnitude_ref_emb = np.linalg.norm(ref_emb, axis=1)
+        cos_sim = 1 - dot_product / (magnitude_emb * magnitude_ref_emb)
+        idx_min = int(np.argmin(cos_sim))
+        face_id = list(self.face_embeddings.keys())[idx_min]
+        return face_id, cos_sim[idx_min]
+
+    def get_closest_box(self, bbox: np.ndarray) -> tuple[str, float]:
+        center = (bbox[:2] + bbox[2:]) / 2
+        ref_boxes = np.stack([box for box in self.last_bbox.values()])
+        ref_centers = (ref_boxes[:, :2] + ref_boxes[:, 2:]) / 2
+        distances = np.linalg.norm(center[None, :] - ref_centers, axis=1)
+        idx_min = int(np.argmin(distances))
+        face_id = list(self.last_bbox.keys())[idx_min]
+        min_dist = distances[idx_min] / max(bbox[[2, 3]] - bbox[[0, 1]])
+        return face_id, min_dist
+
+
 class FaceTracker:
-    def __init__(self, det_thresh: float = 0.0, box_disp_thresh: float = 0.1, cos_sim_thresh: float = 0.7) -> None:
+    def __init__(self, det_thresh: float = 0.0, box_disp_thresh: float = 0.3, cos_sim_thresh: float = 0.5) -> None:
         self.det_thresh = det_thresh
         self.box_disp_thresh = box_disp_thresh
         self.cos_sim_thresh = cos_sim_thresh
@@ -20,15 +66,10 @@ class FaceTracker:
         self.app.prepare(ctx_id=0, det_size=(640, 640))
 
     def __call__(self, filename: str, max_frames: int | None = None, quiet: bool = False) -> dict[str, FaceAnnotation]:
-        last_boxes = None
-        last_classes = None
         face_anns = {}
-        face_emb = {}
+        face_emb = FaceEmbeddings()
         with Video(filename, max_frames=max_frames) as video:
             for frame_idx in tqdm(range(video.num_frames), desc='Processing video', leave=False, disable=quiet):
-                curr_boxes = []
-                curr_classes = []
-
                 frame = video.read()
                 faces = self.app.get(frame)
                 for face_idx, face in enumerate(faces):
@@ -40,47 +81,29 @@ class FaceTracker:
                         'landmarks': face.kps.flatten().tolist()
                     }
 
-                    if last_boxes is None:
+                    if len(face_emb) == 0:
                         final_class = str(face_idx)
                         face_anns[final_class] = {str(frame_idx): face_dict}
-                        face_emb[final_class] = face.embedding
                     else:
-                        box_idx_min, box_dist = self.boxes_get_min_dist(face.bbox, last_boxes)
-                        box_dist = box_dist / max(face.bbox[[2, 3]] - face.bbox[[0, 1]])
-                        face_class, emb_dist = self.emb_get_min_cos_sim(face.embedding, face_emb)
+                        final_class = None
+                        box_class, box_dist = face_emb.get_closest_box(face.bbox)
+                        if (
+                            box_dist < self.box_disp_thresh and
+                            face_emb.get_cos_sim(box_class, face.embedding) < self.cos_sim_thresh * 3
+                        ):
+                            final_class = box_class
 
-                        if box_dist < self.box_disp_thresh:
-                            final_class = str(last_classes[box_idx_min])
-                        elif emb_dist < self.cos_sim_thresh:
-                            final_class = face_class
-                        else:
+                        if final_class is None:
+                            face_class, emb_dist = face_emb.get_closest_face(face.embedding)
+                            if emb_dist < self.cos_sim_thresh:
+                                final_class = face_class
+
+                        if final_class is None:
                             final_class = str(len(face_anns))
-                            face_emb[final_class] = face.embedding
                         face_anns.setdefault(final_class, {})[str(frame_idx)] = face_dict
 
-                    curr_boxes.append(face.bbox)
-                    curr_classes.append(final_class)
-
-                if len(curr_boxes) > 0:
-                    last_boxes = np.array(curr_boxes)
-                    last_classes = curr_classes
+                    face_emb.add(final_class, face.bbox, face.embedding)
 
         return face_anns
 
-    def boxes_get_min_dist(self, bbox: np.ndarray, ref_boxes: np.ndarray) -> tuple[int, float]:
-        center = (bbox[:2] + bbox[2:]) / 2
-        ref_centers = (ref_boxes[:, :2] + ref_boxes[:, 2:]) / 2
-        distances = np.linalg.norm(center[None, :] - ref_centers, axis=1)
-        idx_min = int(np.argmin(distances))
-        return idx_min, distances[idx_min]
-
-    def emb_get_min_cos_sim(self, emb: np.ndarray, face_emb: dict[str, np.ndarray]) -> tuple[str, float]:
-        ref_emb = np.stack([v for v in face_emb.values()])
-        dot_product = np.matmul(ref_emb, emb)
-        magnitude_emb = np.linalg.norm(emb)
-        magnitude_ref_emb = np.linalg.norm(ref_emb, axis=1)
-        cos_sim = 1 - dot_product / (magnitude_emb * magnitude_ref_emb)
-        idx_min = int(np.argmin(cos_sim))
-        face_idx = list(face_emb.keys())[idx_min]
-        return face_idx, cos_sim[idx_min]
 

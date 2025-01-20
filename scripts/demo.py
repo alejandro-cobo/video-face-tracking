@@ -9,7 +9,7 @@ ROOT_PATH: str = str(Path(__file__).parent.parent)
 sys.path.insert(0, ROOT_PATH)
 from src.face_tracker import FaceTracker
 from src.utils import draw_face_anns
-from src.video import Video
+from src.video import Video, play_video
 sys.path.remove(ROOT_PATH)
 
 
@@ -38,9 +38,9 @@ def main(argv: list[str]) -> None:
         with open(ann_path, 'r') as ann_file:
             faces = json.load(ann_file)
 
-    print("Showing video. Press 'q' on the window to stop video playback.")
+    frames = []
     with Video(filename) as video:
-        delay = int(1000 / video.fps)
+        fps = video.fps
         for frame_idx in range(video.num_frames):
             frame_idx_str = str(frame_idx)
             frame = video.read()
@@ -48,10 +48,10 @@ def main(argv: list[str]) -> None:
                 if frame_idx_str in face:
                     frame = draw_face_anns(frame, face[frame_idx_str], face_idx)
 
-            cv2.imshow('Video', frame)
-            key = cv2.waitKey(delay)
-            if key == ord('q'):
-                break
+            frames.append(frame)
+
+    print("Showing video. Press 'q' on the window to stop video playback.")
+    play_video(frames, fps)
 
 
 if __name__ == '__main__':
