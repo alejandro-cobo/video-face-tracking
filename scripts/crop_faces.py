@@ -94,7 +94,10 @@ def process_file(
                     crop = crop_image(frame, bbox)
                     if crop_size is not None:
                         crop = resize_image(crop, crop_size)
-                    crop_path = out_dir / f'{frame_idx:05d}_{int(face_idx):03d}.png'
+
+                    face_dir = out_dir / f'face_{int(face_idx):03d}'
+                    face_dir.mkdir(exist_ok=True)
+                    crop_path = face_dir / f'{frame_idx:06d}.png'
                     cv2.imwrite(str(crop_path), crop)
 
     tqdm.write(f'Saved cropped images to {out_dir}', file=sys.stdout)
