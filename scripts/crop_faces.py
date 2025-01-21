@@ -10,6 +10,7 @@ from tqdm import tqdm
 ROOT_PATH: str = str(Path(__file__).parent.parent)
 sys.path.insert(0, ROOT_PATH)
 from src.image import align_bbox, crop_image, expand_bbox, resize_image
+from src.path import find
 from src.video import VIDEO_FORMATS, Video
 sys.path.remove(ROOT_PATH)
 
@@ -31,6 +32,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
              'file.'
     )
     parser.add_argument(
+        '--ann-path', '-a',
+        type=str,
+        help='Path to JSON annotations file or root directory. By default, the script searches for annotation files '
+             'with the same name as the video files.'
+    )
+    parser.add_argument(
         '--crop-size', '-c',
         type=int,
         help='Size of the saved image crops, in pixels. Ignore to skip the resize step and save each crop with its '
@@ -43,7 +50,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help='Factor to use to increase the bounding box size. Default: 1.3 (increases the size by 30 percent).'
     )
     parser.add_argument(
-        '--align', '-a',
+        '--align',
         action='store_true',
         help='Align faces to match the center of the bounding box to the position of the nose landmark.'
     )
@@ -60,6 +67,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def process_file(
     video_path: Path,
+    ann_path: Path | None,
     out_dir: Path | None,
     crop_size: int | None,
     bbox_scale: float,
@@ -68,7 +76,8 @@ def process_file(
     if video_path.suffix not in VIDEO_FORMATS:
         raise ValueError(f'Input file must be a valid video file: {video_path} ({VIDEO_FORMATS})')
 
-    ann_path = video_path.with_suffix('.json')
+    if ann_path is None:
+        ann_path = video_path.with_suffix('.json')
     if not ann_path.exists():
         raise FileNotFoundError(f'Annotation path not found {ann_path}')
 
@@ -105,6 +114,7 @@ def process_file(
 
 def process_dir(
     input_path: Path,
+    ann_path: Path | None,
     out_dir: Path | None,
     crop_size: int | None,
     bbox_scale: float,
@@ -112,28 +122,28 @@ def process_dir(
     recursive: bool,
     quiet: bool
 ) -> None:
-    def test_valid_file(file_path: Path) -> bool:
-        ann_path = file_path.with_suffix('.json')
-        return file_path.suffix in VIDEO_FORMATS and ann_path.exists()
-
-    video_files = []
-    if recursive:
-        for root, _, files in input_path.walk():
-            for file in files:
-                file = root / file
-                if test_valid_file(file):
-                    video_files.append(file)
-    else:
-        for file in input_path.iterdir():
-            if test_valid_file(file):
-                video_files.append(file)
-
+    video_files = find(input_path, VIDEO_FORMATS, recursive)
     for video_path in tqdm(video_files, desc='Processing files', leave=False, disable=quiet):
-        ann_out_dir = None
+        crop_ann_path = video_path.with_suffix('.json')
+        if ann_path is not None:
+            rel_path = crop_ann_path.relative_to(input_path)
+            crop_ann_path = ann_path / rel_path
+        if not crop_ann_path.exists():
+            continue
+
+        crop_out_dir = None
         if out_dir is not None:
             rel_path = video_path.with_suffix('').relative_to(input_path)
-            ann_out_dir = out_dir / rel_path
-        process_file(video_path, ann_out_dir, crop_size, bbox_scale, align)
+            crop_out_dir = out_dir / rel_path
+
+        process_file(
+            video_path=video_path,
+            ann_path=crop_ann_path,
+            out_dir=crop_out_dir,
+            crop_size=crop_size,
+            bbox_scale=bbox_scale,
+            align=align
+        )
 
 
 def main(argv: list[str]) -> None:
@@ -141,6 +151,7 @@ def main(argv: list[str]) -> None:
 
     filename = Path(args.filename)
     prefix = None if args.prefix is None else Path(args.prefix)
+    ann_path = None if args.ann_path is None else Path(args.ann_path)
     crop_size = args.crop_size
     bbox_scale = args.bbox_scale
     align = args.align
@@ -150,6 +161,7 @@ def main(argv: list[str]) -> None:
     if filename.is_file() and filename.suffix in VIDEO_FORMATS:
         process_file(
             video_path=filename,
+            ann_path=ann_path,
             out_dir=prefix,
             crop_size=crop_size,
             bbox_scale=bbox_scale,
@@ -158,6 +170,7 @@ def main(argv: list[str]) -> None:
     elif filename.is_dir():
         process_dir(
             input_path=filename,
+            ann_path=ann_path,
             out_dir=prefix,
             crop_size=crop_size,
             bbox_scale=bbox_scale,

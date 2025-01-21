@@ -49,13 +49,19 @@ def play_video(
         keys = [keys] if isinstance(keys, str) else keys
         return [ord(key) for key in keys]
 
+    def list_to_str(keys: str | list[str]) -> str:
+        if isinstance(keys, str):
+            keys = [keys]
+        keys_with_quotes = ["'" + key + "'" for key in keys]
+        return ','.join(keys_with_quotes)
+
     if not quiet:
         print('Video playback controls:')
-        print('To quit the video: ', quit_btn)
-        print('To skip to the next video: ', next_btn)
-        print('To pause/play the video: ', pause_btn)
-        print('To go back one frame: ', back_btn)
-        print('Any other key advances one frame')
+        print('- To quit the video: ', list_to_str(quit_btn))
+        print('- To skip to the next video: ', list_to_str(next_btn))
+        print('- To pause/play the video: ', list_to_str(pause_btn))
+        print('- To go back one frame: ', list_to_str(back_btn))
+        print('- Any other key advances one frame')
 
     quit_btn = process_keys(quit_btn)
     next_btn = process_keys(next_btn)

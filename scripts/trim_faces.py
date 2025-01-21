@@ -3,6 +3,11 @@ import json
 from pathlib import Path
 import sys
 
+ROOT_PATH: str = str(Path(__file__).parent.parent)
+sys.path.insert(0, ROOT_PATH)
+from src.path import find
+sys.path.remove(ROOT_PATH)
+
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser("Tool to remove face annotations with low number of frames.")
@@ -38,15 +43,8 @@ def process_file(input_path: Path, min_frames: int) -> None:
 
 
 def process_dir(input_path: Path, min_frames: int, recursive: bool) -> None:
-    if recursive:
-        for root, _, files in input_path.walk():
-            for file in files:
-                if file.suffix == '.json':
-                    process_file(root / file, min_frames)
-    else:
-        for file in input_path.iterdir():
-            if file.suffix == '.json':
-                process_file(file, min_frames)
+    for file in find(input_path, '.json', recursive):
+        process_file(file, min_frames)
 
 
 def main(argv: list[str]) -> None:

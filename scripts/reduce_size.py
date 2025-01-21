@@ -1,8 +1,13 @@
 import argparse
+from functools import partial
 import json
 from pathlib import Path
 import sys
 
+ROOT_PATH: str = str(Path(__file__).parent.parent)
+sys.path.insert(0, ROOT_PATH)
+from src.path import find
+sys.path.remove(ROOT_PATH)
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser("Tool to reduce the size of JSON annotations by rounding floating point numbers.")
@@ -42,14 +47,15 @@ def process_file(input_path: Path, precision: int, ignore: list[str] | None = No
     with open(input_path, 'r') as json_file:
         data = json.load(json_file)
 
+    round_func = int if precision == 0 else partial(round, ndigits=precision)
     for face_anns in data.values():
         for frame_anns in face_anns.values():
             if ignore is None or 'bbox' not in ignore:
-                frame_anns['bbox'] = [round(x, precision) for x in frame_anns['bbox']]
+                frame_anns['bbox'] = [round_func(x) for x in frame_anns['bbox']]
             if ignore is None or 'prob' not in ignore:
-                frame_anns['prob'] = round(frame_anns['prob'], precision)
+                frame_anns['prob'] = round_func(frame_anns['prob'])
             if ignore is None or 'landmarks' not in ignore:
-                frame_anns['landmarks'] = [round(x, precision) for x in frame_anns['landmarks']]
+                frame_anns['landmarks'] = [round_func(x) for x in frame_anns['landmarks']]
 
     with open(input_path, 'w') as json_file:
         json.dump(data, json_file)
@@ -60,15 +66,8 @@ def process_file(input_path: Path, precision: int, ignore: list[str] | None = No
 
 def process_dir(input_path: Path, precision: int, recursive: bool, ignore: list[str] | None = None) -> None:
     total_size = 0
-    if recursive:
-        for root, _, files in input_path.walk():
-            for file in files:
-                if file.suffix == '.json':
-                    total_size += process_file(root / file, precision, ignore)
-    else:
-        for file in input_path.iterdir():
-            if file.suffix == '.json':
-                total_size += process_file(file, precision, ignore)
+    for file in find(input_path, '.json', recursive):
+        total_size += process_file(file, precision, ignore)
     print(f'Total: {num_to_str(total_size)} deleted')
 
 

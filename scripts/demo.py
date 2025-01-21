@@ -48,7 +48,6 @@ def main(argv: list[str]) -> None:
 
             frames.append(frame)
 
-    print("Showing video. Press 'q' on the window to stop video playback.")
     play_video(frames, fps)
 
 
