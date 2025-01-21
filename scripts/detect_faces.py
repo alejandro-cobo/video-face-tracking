@@ -3,12 +3,13 @@ import json
 from pathlib import Path
 import sys
 
+from tqdm import tqdm
+
 ROOT_PATH: str = str(Path(__file__).parent.parent)
 sys.path.insert(0, ROOT_PATH)
 from src.face_tracker import FaceTracker
+from src.video import VIDEO_FORMATS
 sys.path.remove(ROOT_PATH)
-
-VIDEO_FORMATS = ('.mp4', '.mov', '.avi', '.wmv', '.webm', '.flv')
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -30,30 +31,35 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action='store_true',
         help='When the input filename is a directory, also process recursively all subdirectories inside.'
     )
+    parser.add_argument('--quiet', '--silent', '-q', action='store_true', help='Hide progress bars.')
     args = parser.parse_args(argv)
     return args
 
 
-def process_file(input_path: Path, face_tracker: FaceTracker, max_frames: int | None) -> None:
+def process_file(input_path: Path, face_tracker: FaceTracker) -> None:
     if input_path.suffix not in VIDEO_FORMATS:
         raise ValueError(f'Input file must be a valid video file: {input_path} ({VIDEO_FORMATS})')
-    faces = face_tracker(str(input_path), max_frames=max_frames)
+    faces = face_tracker(str(input_path))
     out_path = input_path.with_suffix('.json')
     with open(out_path, 'w') as out_file:
         json.dump(faces, out_file)
-    print(f'Saved annotations file: {out_path}')
+    tqdm.write(f'Saved annotations file: {out_path}', file=sys.stdout)
 
 
-def process_dir(input_path: Path, face_tracker: FaceTracker, max_frames: int | None, recursive: bool) -> None:
+def process_dir(input_path: Path, face_tracker: FaceTracker, recursive: bool, quiet: bool) -> None:
+    video_files = []
     if recursive:
         for root, _, files in input_path.walk():
             for file in files:
                 if file.suffix in VIDEO_FORMATS:
-                    process_file(root / file, face_tracker, max_frames)
+                    video_files.append(root / file)
     else:
         for file in input_path.iterdir():
             if file.suffix in VIDEO_FORMATS:
-                process_file(file, face_tracker, max_frames)
+                video_files.append(file)
+
+    for file in tqdm(video_files, desc='Processing files', leave=False, disable=quiet):
+        process_file(file, face_tracker)
 
 
 def main(argv: list[str]) -> None:
@@ -62,14 +68,20 @@ def main(argv: list[str]) -> None:
     filename = Path(args.filename)
     max_frames = args.max_frames
     recursive = args.recursive
+    quiet = args.quiet
 
-    face_tracker = FaceTracker()
-    if filename.is_file():
-        process_file(filename, face_tracker, max_frames)
+    face_tracker = FaceTracker(max_frames=max_frames, quiet=quiet)
+    if filename.is_file() and filename.suffix in VIDEO_FORMATS:
+        process_file(input_path=filename, face_tracker=face_tracker)
     elif filename.is_dir():
-        process_dir(filename, face_tracker, max_frames, recursive)
+        process_dir(
+            input_path=filename,
+            face_tracker=face_tracker,
+            recursive=recursive,
+            quiet=quiet
+        )
     else:
-        raise FileNotFoundError(f'Filename {filename} is not a file or directory.')
+        raise FileNotFoundError(f'Filename {filename} is not a valid file or directory.')
 
 
 if __name__ == '__main__':

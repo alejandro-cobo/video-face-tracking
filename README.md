@@ -89,6 +89,18 @@ For more usage information, run the script with the ```--help``` flag.
 If you want to visualize the detections in a video file before generating
 annotation files, you can run ```python scripts/demo.py <VIDEO_FILE>```
 
+## Other functionalities
+
+The directory ```scripts``` contains more useful programs for processing video
+datasets:
+
+- ```crop_faces.py```: after computing JSON annotation files, you can use this
+script to crop the detected faces and save them as image files.
+- ```reduce_size.py```: tool to post-process the JSON annotations by rounding
+floating point numbers.
+- ```trim_faces.py```: remove faces from JSON annotation files with less than a
+number of annotated frames. Useful to remove faulty detections.
+
 ## Acknowledgements
 
 This repo uses pre-trained face detection and recognition models provided by

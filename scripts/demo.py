@@ -3,12 +3,10 @@ import json
 from pathlib import Path
 import sys
 
-import cv2
-
 ROOT_PATH: str = str(Path(__file__).parent.parent)
 sys.path.insert(0, ROOT_PATH)
+from src.draw import draw_face_anns
 from src.face_tracker import FaceTracker
-from src.utils import draw_face_anns
 from src.video import Video, play_video
 sys.path.remove(ROOT_PATH)
 

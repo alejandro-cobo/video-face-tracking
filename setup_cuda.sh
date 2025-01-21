@@ -7,9 +7,9 @@
 
 main() {
     unset LD_LIBRARY_PATH
-    local pip_cmd="pip"
+    local pip_cmd="uv pip"
     if ! command -v $pip_cmd &> /dev/null; then
-        pip_cmd="uv pip"
+        pip_cmd="pip"
     fi
     local root_path=$($pip_cmd show onnxruntime-gpu | awk '$1 ~ /Location/ {print $2}')
     for dir in $(echo $root_path/nvidia/*/lib); do

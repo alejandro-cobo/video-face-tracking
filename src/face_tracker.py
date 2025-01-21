@@ -58,18 +58,28 @@ class FaceEmbeddings:
 
 
 class FaceTracker:
-    def __init__(self, det_thresh: float = 0.0, box_disp_thresh: float = 0.3, cos_sim_thresh: float = 0.5) -> None:
+    def __init__(
+        self,
+        det_thresh: float = 0.0,
+        box_disp_thresh: float = 0.3,
+        cos_sim_thresh: float = 0.5,
+        max_frames: int | None = None,
+        quiet: bool = False
+    ) -> None:
         self.det_thresh = det_thresh
         self.box_disp_thresh = box_disp_thresh
         self.cos_sim_thresh = cos_sim_thresh
+        self.max_frames = max_frames
+        self.quiet = quiet
+
         self.app = FaceAnalysis(allowed_modules=['detection', 'recognition'], providers=['CUDAExecutionProvider'])
         self.app.prepare(ctx_id=0, det_size=(640, 640))
 
-    def __call__(self, filename: str, max_frames: int | None = None, quiet: bool = False) -> dict[str, FaceAnnotation]:
+    def __call__(self, filename: str) -> dict[str, FaceAnnotation]:
         face_anns = {}
         face_emb = FaceEmbeddings()
-        with Video(filename, max_frames=max_frames) as video:
-            for frame_idx in tqdm(range(video.num_frames), desc='Processing video', leave=False, disable=quiet):
+        with Video(filename, max_frames=self.max_frames) as video:
+            for frame_idx in tqdm(range(video.num_frames), desc='Processing video', leave=False, disable=self.quiet):
                 frame = video.read()
                 faces = self.app.get(frame)
                 for face_idx, face in enumerate(faces):

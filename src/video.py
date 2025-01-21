@@ -5,7 +5,9 @@ from imutils.video import FileVideoStream
 import numpy as np
 
 
-__all__ = ['Video', 'play_video']
+__all__ = ['VIDEO_FORMATS', 'Video', 'play_video']
+
+VIDEO_FORMATS = ('.mp4', '.mov', '.avi', '.wmv', '.webm', '.flv')
 
 
 class Video(FileVideoStream):
