@@ -18,9 +18,10 @@ sys.path.remove(ROOT_PATH)
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser("Script to crop annotated faces from video files.")
     parser.add_argument(
-        'filename',
+        'filenames',
         type=str,
-        help='Path to a video file or a directory. If it is a directory, all videos inside the directory all '
+        nargs='+',
+        help='Path(s) to a video file or a directory. If it is a directory, all videos inside the directory all '
              'proccessed. If the --recursive flag is provided, all subdirectories are recursively traversed and '
              'proccessed too. JSON annotations must have the same filename as the video (e.g., '
              'mydir/video.mp4 and mydir/video.json).'
@@ -123,7 +124,7 @@ def process_dir(
     quiet: bool
 ) -> None:
     video_files = find(input_path, VIDEO_FORMATS, recursive)
-    for video_path in tqdm(video_files, desc='Processing files', leave=False, disable=quiet):
+    for video_path in tqdm(video_files, desc='Processing directory', leave=False, disable=quiet):
         crop_ann_path = video_path.with_suffix('.json')
         if ann_path is not None:
             rel_path = crop_ann_path.relative_to(input_path)
@@ -149,7 +150,7 @@ def process_dir(
 def main(argv: list[str]) -> None:
     args = parse_args(argv)
 
-    filename = Path(args.filename)
+    filenames = args.filenames
     prefix = None if args.prefix is None else Path(args.prefix)
     ann_path = None if args.ann_path is None else Path(args.ann_path)
     crop_size = args.crop_size
@@ -158,28 +159,31 @@ def main(argv: list[str]) -> None:
     recursive = args.recursive
     quiet = args.quiet
 
-    if filename.is_file() and filename.suffix in VIDEO_FORMATS:
-        process_file(
-            video_path=filename,
-            ann_path=ann_path,
-            out_dir=prefix,
-            crop_size=crop_size,
-            bbox_scale=bbox_scale,
-            align=align
-        )
-    elif filename.is_dir():
-        process_dir(
-            input_path=filename,
-            ann_path=ann_path,
-            out_dir=prefix,
-            crop_size=crop_size,
-            bbox_scale=bbox_scale,
-            align=align,
-            recursive=recursive,
-            quiet=quiet
-        )
-    else:
-        raise FileNotFoundError(f'Filename {filename} is not a valid file or directory.')
+    disable = quiet or len(filenames) == 1
+    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable):
+        filename = Path(filename)
+        if filename.is_file():
+            process_file(
+                video_path=filename,
+                ann_path=ann_path,
+                out_dir=prefix,
+                crop_size=crop_size,
+                bbox_scale=bbox_scale,
+                align=align
+            )
+        elif filename.is_dir():
+            process_dir(
+                input_path=filename,
+                ann_path=ann_path,
+                out_dir=prefix,
+                crop_size=crop_size,
+                bbox_scale=bbox_scale,
+                align=align,
+                recursive=recursive,
+                quiet=quiet
+            )
+        else:
+            tqdm.write(f'crop_faces.py: WARNING: file {filename} does not exist.')
 
 
 if __name__ == '__main__':

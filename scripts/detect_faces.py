@@ -16,9 +16,10 @@ sys.path.remove(ROOT_PATH)
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser("Video face tracking tool to annotate video datasets.")
     parser.add_argument(
-        'filename',
+        'filenames',
         type=str,
-        help='Path to a video file or a directory. If it is a directory, all videos inside the directory all '
+        nargs='+',
+        help='Path(s) to a video file or a directory. If it is a directory, all videos inside the directory all '
              'proccessed. If the --recursive flag is provided, all subdirectories are recursively traversed and '
              'proccessed too.'
     )
@@ -67,7 +68,7 @@ def process_dir(
     quiet: bool
 ) -> None:
     video_files = find(input_path, VIDEO_FORMATS, recursive)
-    for video_path in tqdm(video_files, desc='Processing files', leave=False, disable=quiet):
+    for video_path in tqdm(video_files, desc='Processing directory', leave=False, disable=quiet):
         ann_out_dir = None
         if out_dir is not None:
             rel_path = video_path.parent.relative_to(input_path)
@@ -78,25 +79,28 @@ def process_dir(
 def main(argv: list[str]) -> None:
     args = parse_args(argv)
 
-    filename = Path(args.filename)
+    filenames = args.filenames
     prefix = None if args.prefix is None else Path(args.prefix)
     max_frames = args.max_frames
     recursive = args.recursive
     quiet = args.quiet
 
     face_tracker = FaceTracker(max_frames=max_frames, quiet=quiet)
-    if filename.is_file() and filename.suffix in VIDEO_FORMATS:
-        process_file(video_path=filename, out_dir=prefix, face_tracker=face_tracker)
-    elif filename.is_dir():
-        process_dir(
-            input_path=filename,
-            out_dir=prefix,
-            face_tracker=face_tracker,
-            recursive=recursive,
-            quiet=quiet
-        )
-    else:
-        raise FileNotFoundError(f'Filename {filename} is not a valid file or directory.')
+    disable = quiet or len(filenames) == 1
+    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable):
+        filename = Path(filename)
+        if filename.is_file():
+            process_file(video_path=filename, out_dir=prefix, face_tracker=face_tracker)
+        elif filename.is_dir():
+            process_dir(
+                input_path=filename,
+                out_dir=prefix,
+                face_tracker=face_tracker,
+                recursive=recursive,
+                quiet=quiet
+            )
+        else:
+            tqdm.write(f'detect_faces.py: WARNING: file {filename} does not exist.')
 
 
 if __name__ == '__main__':
