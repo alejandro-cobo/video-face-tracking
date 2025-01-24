@@ -1,14 +1,13 @@
-# Video face tracker
+# Face tracking for video datasets
 
 <p align="center">
     <img src="samples/ffiw-sample-1.gif" width=400px>
     &nbsp;&nbsp;&nbsp;
     <img src="samples/ffiw-sample-2.gif" width=400px>
+    <em>Sample videos from the <a href="https://github.com/tfzhou/FFIW">FFIW dataset</a>.</em>
 </p>
 
-*Sample videos from the [FFIW dataset](https://github.com/tfzhou/FFIW).*
-
-This is a tool to perform simple tracking of multiple faces in video files.
+This is a tool to perform simple tracking of multiple faces in video datasets.
 The main focus is to annotate video datasets with face bounding box information
 to crop faces in a posterior step.
 
@@ -21,7 +20,7 @@ NVIDIA driver >=525.60.13 for compatibility with CUDA 12.x.
 ### Run locally
 
 Install python >= 3.11 and run ```pip install -r requirements.txt```.
-Since onnx cannot find locally installed CUDA libraries, you must run
+Since ONNX cannot find locally installed CUDA libraries, you must run
 ```source setup_cuda.sh``` once to populate the ```LD_LIBRARY_PATH``` environment
 variable with the correct library paths.
 
@@ -84,11 +83,6 @@ python scripts/detect_faces.py <DIR_PATH> --recursive
 
 For more usage information, run the script with the ```--help``` flag.
 
-## Try the demo
-
-If you want to visualize the detections in a video file before generating
-annotation files, you can run ```python scripts/demo.py <VIDEO_FILE>```
-
 ## Other functionalities
 
 The directory ```scripts``` contains more useful programs for processing video
@@ -100,12 +94,13 @@ script to crop the detected faces and save them as image files.
 floating point numbers.
 - ```trim_faces.py```: remove faces from JSON annotation files with less than a
 number of annotated frames. Useful to remove faulty detections.
+- ```view_annotations.py```: visualize detections on a video file. If only a
+video file is provided, detections are computed without creating annotation
+files.
 
 ## Acknowledgements
 
 This repo uses pre-trained face detection and recognition models provided by
-[insightface](https://github.com/deepinsight/insightface).
-
-These models, and by extension this tool, are available for non-commercial
-research purposes only.
+[insightface](https://github.com/deepinsight/insightface). These models, and by
+extension this tool, are available for non-commercial research purposes only.
 
