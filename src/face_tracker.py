@@ -60,7 +60,7 @@ class FaceEmbeddings:
 class FaceTracker:
     def __init__(
         self,
-        det_thresh: float = 0.0,
+        det_thresh: float = 0.7,
         box_disp_thresh: float = 0.3,
         cos_sim_thresh: float = 0.5,
         max_frames: int | None = None,
@@ -115,5 +115,4 @@ class FaceTracker:
                     face_emb.add(final_class, face.bbox, face.embedding)
 
         return face_anns
-
 

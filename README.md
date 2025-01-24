@@ -106,3 +106,6 @@ number of annotated frames. Useful to remove faulty detections.
 This repo uses pre-trained face detection and recognition models provided by
 [insightface](https://github.com/deepinsight/insightface).
 
+These models, and by extension this tool, are available for non-commercial
+research purposes only.
+

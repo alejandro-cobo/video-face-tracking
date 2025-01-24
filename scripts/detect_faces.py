@@ -35,6 +35,25 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help='Max number of frames to process for each video. By default, all frames are proccessed.'
     )
     parser.add_argument(
+        '--det-thresh',
+        type=float,
+        default=0.7,
+        help='Minimum detector confidence score to consider a detection as valid. Default: 0.7.'
+    )
+    parser.add_argument(
+        '--box-disp-thresh',
+        type=float,
+        default=0.3,
+        help='Maximum displacement of a bounding box to consider it the same as the previous frame. Default: 0.3 (30 '
+             'percent of the max side of the box).'
+    )
+    parser.add_argument(
+        '--cos-sim-thresh',
+        type=float,
+        default=0.5,
+        help='Maximum cosine similarity score to match two faces. Default: 0.5.'
+    )
+    parser.add_argument(
         '--recursive', '-r',
         action='store_true',
         help='When the input filename is a directory, also process recursively all subdirectories inside.'
@@ -82,10 +101,18 @@ def main(argv: list[str]) -> None:
     filenames = args.filenames
     prefix = None if args.prefix is None else Path(args.prefix)
     max_frames = args.max_frames
+    det_thresh = args.det_thresh
+    box_disp_thresh = args.box_disp_thresh
+    cos_sim_thresh = args.cos_sim_thresh
     recursive = args.recursive
     quiet = args.quiet
 
-    face_tracker = FaceTracker(max_frames=max_frames, quiet=quiet)
+    face_tracker = FaceTracker(
+        det_thresh=det_thresh,
+        box_disp_thresh=box_disp_thresh,
+        cos_sim_thresh=cos_sim_thresh,
+        max_frames=max_frames, quiet=quiet
+    )
     disable = quiet or len(filenames) == 1
     for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable):
         filename = Path(filename)

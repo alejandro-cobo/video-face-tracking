@@ -65,7 +65,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return args
 
 
-
 def process_file(
     video_path: Path,
     ann_path: Path | None,
