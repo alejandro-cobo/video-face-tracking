@@ -7,7 +7,7 @@ ROOT_PATH: str = str(Path(__file__).parent.parent)
 sys.path.insert(0, ROOT_PATH)
 from src.draw import draw_face_anns
 from src.face_tracker import FaceTracker
-from src.video import Video, play_video
+from src.video import VIDEO_FORMATS, Video, play_video
 sys.path.remove(ROOT_PATH)
 
 
@@ -51,6 +51,9 @@ def main(argv: list[str]) -> None:
     box_disp_thresh = args.box_disp_thresh
     cos_sim_thresh = args.cos_sim_thresh
 
+    if Path(filename).suffix not in VIDEO_FORMATS:
+        raise ValueError(f'Input file is not a video {filename} ({VIDEO_FORMATS}).')
+
     if ann_path is None:
         face_tracker = FaceTracker(
             det_thresh=det_thresh,
@@ -71,7 +74,6 @@ def main(argv: list[str]) -> None:
             for face_idx, face in faces.items():
                 if frame_idx_str in face:
                     frame = draw_face_anns(frame, face[frame_idx_str], face_idx)
-
             frames.append(frame)
 
     play_video(frames, fps)

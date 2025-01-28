@@ -79,7 +79,13 @@ class FaceTracker:
         face_anns = {}
         face_emb = FaceEmbeddings()
         with Video(filename, max_frames=self.max_frames) as video:
-            for frame_idx in tqdm(range(video.num_frames), desc='Processing video', leave=False, disable=self.quiet):
+            for frame_idx in tqdm(
+                range(video.num_frames),
+                desc='Processing video',
+                leave=False,
+                disable=self.quiet,
+                dynamic_ncols=True
+            ):
                 frame = video.read()
                 faces = self.app.get(frame)
                 for face_idx, face in enumerate(faces):

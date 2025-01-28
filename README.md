@@ -19,7 +19,7 @@ NVIDIA driver >=525.60.13 for compatibility with CUDA 12.x.
 
 ### Run locally
 
-Install python >= 3.11 and run ```pip install -r requirements.txt```.
+Install python >= 3.10 and run ```pip install -r requirements.txt```.
 Since ONNX cannot find locally installed CUDA libraries, you must run
 ```source setup_cuda.sh``` once to populate the ```LD_LIBRARY_PATH``` environment
 variable with the correct library paths.

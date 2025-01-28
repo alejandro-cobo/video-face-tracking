@@ -21,10 +21,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         'filenames',
         type=str,
         nargs='+',
-        help='Path(s) to a video file or a directory. If it is a directory, all videos inside the directory all '
+        help='Path(s) to a video file or a directory. If it is a directory, all videos inside the directory are '
              'proccessed. If the --recursive flag is provided, all subdirectories are recursively traversed and '
              'proccessed too. JSON annotations must have the same filename as the video (e.g., '
-             'mydir/video.mp4 and mydir/video.json).'
+             'mydir/video.mp4 and mydir/video.json) unless --ann-path is set.'
     )
     parser.add_argument(
         '--prefix', '-p',
@@ -104,7 +104,7 @@ def process_file(
                     if crop_size is not None:
                         crop = resize_image(crop, crop_size)
 
-                    face_dir = out_dir / f'face_{int(face_idx):03d}'
+                    face_dir = out_dir / face_idx
                     face_dir.mkdir(exist_ok=True)
                     crop_path = face_dir / f'{frame_idx:06d}.png'
                     cv2.imwrite(str(crop_path), crop)
@@ -123,7 +123,7 @@ def process_dir(
     quiet: bool
 ) -> None:
     video_files = find(input_path, VIDEO_FORMATS, recursive)
-    for video_path in tqdm(video_files, desc='Processing directory', leave=False, disable=quiet):
+    for video_path in tqdm(video_files, desc='Processing directory', leave=False, disable=quiet, dynamic_ncols=True):
         crop_ann_path = video_path.with_suffix('.json')
         if ann_path is not None:
             rel_path = crop_ann_path.relative_to(input_path)
@@ -159,7 +159,7 @@ def main(argv: list[str]) -> None:
     quiet = args.quiet
 
     disable = quiet or len(filenames) == 1
-    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable):
+    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable, dynamic_ncols=True):
         filename = Path(filename)
         if filename.is_file():
             process_file(

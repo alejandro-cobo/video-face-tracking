@@ -87,7 +87,7 @@ def process_dir(
     quiet: bool
 ) -> None:
     video_files = find(input_path, VIDEO_FORMATS, recursive)
-    for video_path in tqdm(video_files, desc='Processing directory', leave=False, disable=quiet):
+    for video_path in tqdm(video_files, desc='Processing directory', leave=False, disable=quiet, dynamic_ncols=True):
         ann_out_dir = None
         if out_dir is not None:
             rel_path = video_path.parent.relative_to(input_path)
@@ -114,7 +114,7 @@ def main(argv: list[str]) -> None:
         max_frames=max_frames, quiet=quiet
     )
     disable = quiet or len(filenames) == 1
-    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable):
+    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable, dynamic_ncols=True):
         filename = Path(filename)
         if filename.is_file():
             process_file(video_path=filename, out_dir=prefix, face_tracker=face_tracker)

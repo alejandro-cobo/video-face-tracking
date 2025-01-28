@@ -69,7 +69,13 @@ def process_file(input_path: Path, precision: int, ignore: list[str] | None = No
 
 def process_dir(input_path: Path, precision: int, ignore: list[str] | None, recursive: bool, quiet: bool) -> None:
     total_size = 0
-    for file in tqdm(find(input_path, '.json', recursive), desc='Processing directory', leave=False, disable=quiet):
+    for file in tqdm(
+        find(input_path, '.json', recursive),
+        desc='Processing directory',
+        leave=False,
+        disable=quiet,
+        dynamic_ncols=True
+    ):
         total_size += process_file(file, precision, ignore)
     tqdm.write(f'Total: {num_to_str(total_size)} deleted', file=sys.stdout)
 
@@ -84,7 +90,7 @@ def main(argv: list[str]) -> None:
     quiet = args.quiet
 
     disable = quiet or len(filenames) == 1
-    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable):
+    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable, dynamic_ncols=True):
         filename = Path(filename)
         if filename.is_file():
             process_file(input_path=filename, precision=precision, ignore=ignore)

@@ -46,7 +46,13 @@ def process_file(input_path: Path, min_frames: int) -> None:
 
 
 def process_dir(input_path: Path, min_frames: int, recursive: bool, quiet: bool) -> None:
-    for file in tqdm(find(input_path, '.json', recursive), desc='Processing directory', leave=False, disable=quiet):
+    for file in tqdm(
+        find(input_path, '.json', recursive),
+        desc='Processing directory',
+        leave=False,
+        disable=quiet,
+        dynamic_ncols=True
+    ):
         process_file(file, min_frames)
 
 
@@ -59,7 +65,7 @@ def main(argv: list[str]) -> None:
     quiet = args.quiet
 
     disable = quiet or len(filenames) == 1
-    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable):
+    for filename in tqdm(filenames, desc='Processing input files', leave=False, disable=disable, dynamic_ncols=True):
         filename = Path(filename)
         if filename.is_file():
             process_file(input_path=filename, min_frames=min_frames)
