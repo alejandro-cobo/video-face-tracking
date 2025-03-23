@@ -3,7 +3,7 @@ from typing import Sequence
 import cv2
 import numpy as np
 
-__all__ = ['align_bbox', 'crop_image', 'expand_bbox', 'resize_image']
+__all__ = ["align_bbox", "crop_image", "expand_bbox", "resize_image"]
 
 
 def align_bbox(bbox: np.ndarray, new_center: tuple[float, float]) -> np.ndarray:
@@ -34,7 +34,9 @@ def crop_image(image: np.ndarray, bbox: np.ndarray) -> np.ndarray:
         pad_right = x2 - w
     if y2 > h:
         pad_bottom = y2 - h
-    image = np.pad(image, ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)))
+    image = np.pad(
+        image, ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0))
+    )
     cropped_image = image[y1:y2, x1:x2]
     return cropped_image
 
@@ -57,18 +59,23 @@ def expand_bbox(bbox: np.ndarray, scale: float) -> np.ndarray:
     return new_bbox.T
 
 
-def resize_image(image: np.ndarray, size: int | float | Sequence[int | float], interpolation: int | None = None) -> np.ndarray:
+def resize_image(
+    image: np.ndarray,
+    size: int | float | Sequence[int | float],
+    interpolation: int | None = None,
+) -> np.ndarray:
     if isinstance(size, (int, float)):
         size = (size, size)
     is_scale = isinstance(size[0], float)
 
     if interpolation is None:
-        scale = max(size) if is_scale else  max(size) / max(image.shape[:2])
+        scale = max(size) if is_scale else max(size) / max(image.shape[:2])
         interpolation = cv2.INTER_LINEAR if scale > 1.0 else cv2.INTER_AREA
 
     if is_scale:
-        resized_img = cv2.resize(image, None, fx=size[0], fy=size[1], interpolation=interpolation)
+        resized_img = cv2.resize(
+            image, None, fx=size[0], fy=size[1], interpolation=interpolation
+        )
     else:
         resized_img = cv2.resize(image, size, interpolation=interpolation)
     return resized_img
-

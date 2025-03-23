@@ -5,27 +5,28 @@ from imutils.video import FileVideoStream
 import numpy as np
 
 
-__all__ = ['VIDEO_FORMATS', 'Video', 'play_video']
+__all__ = ["VIDEO_FORMATS", "Video", "play_video"]
 
-VIDEO_FORMATS = ('.mp4', '.mov', '.avi', '.wmv', '.webm', '.flv')
+VIDEO_FORMATS = (".mp4", ".mov", ".avi", ".wmv", ".webm", ".flv")
 
 
 class Video(FileVideoStream):
-    """ Simple context manager that wraps imutils.video.FileVideoStream and automatically calls stop() on exit """
     def __init__(
         self,
         path: str,
         transform: Callable | None = None,
         queue_size: int = 128,
-        max_frames: int | None = None
+        max_frames: int | None = None,
     ) -> None:
         super().__init__(path, transform, queue_size)
 
         frame_count = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.num_frames = frame_count if max_frames is None else min(frame_count, max_frames)
-        self.heigh =int(self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.width =int(self.stream.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.fps =int(self.stream.get(cv2.CAP_PROP_FPS))
+        self.num_frames = (
+            frame_count if max_frames is None else min(frame_count, max_frames)
+        )
+        self.heigh = int(self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.width = int(self.stream.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
 
     def __enter__(self) -> "Video":
         self.start()
@@ -38,12 +39,12 @@ class Video(FileVideoStream):
 def play_video(
     frames: Sequence[np.ndarray],
     fps: float = 30,
-    win_name: str = 'Video',
-    quit_btn: str | list[str] = 'q',
-    next_btn: str | list[str] = 'n',
-    pause_btn: str | list[str] = ' ',
-    back_btn: str | list[str] = 'r',
-    quiet: bool = False
+    win_name: str = "Video",
+    quit_btn: str | list[str] = "q",
+    next_btn: str | list[str] = "n",
+    pause_btn: str | list[str] = " ",
+    back_btn: str | list[str] = "r",
+    quiet: bool = False,
 ) -> int:
     def process_keys(keys: str | list[str]) -> list[int]:
         keys = [keys] if isinstance(keys, str) else keys
@@ -53,15 +54,15 @@ def play_video(
         if isinstance(keys, str):
             keys = [keys]
         keys_with_quotes = ["'" + key + "'" for key in keys]
-        return ','.join(keys_with_quotes)
+        return ",".join(keys_with_quotes)
 
     if not quiet:
-        print('Video playback controls:')
-        print('- To quit the video: ', list_to_str(quit_btn))
-        print('- To skip to the next video: ', list_to_str(next_btn))
-        print('- To pause/play the video: ', list_to_str(pause_btn))
-        print('- To go back one frame: ', list_to_str(back_btn))
-        print('- Any other key advances one frame')
+        print("Video playback controls:")
+        print("- To quit the video: ", list_to_str(quit_btn))
+        print("- To skip to the next video: ", list_to_str(next_btn))
+        print("- To pause/play the video: ", list_to_str(pause_btn))
+        print("- To go back one frame: ", list_to_str(back_btn))
+        print("- Any other key advances one frame")
 
     quit_btn = process_keys(quit_btn)
     next_btn = process_keys(next_btn)
@@ -92,4 +93,3 @@ def play_video(
 
     cv2.destroyWindow(win_name)
     return exit_code
-

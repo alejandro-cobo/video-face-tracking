@@ -19,14 +19,14 @@ NVIDIA driver >=525.60.13 for compatibility with CUDA 12.x.
 
 ### Run locally
 
-Install python >= 3.10 and run ```pip install -r requirements.txt```.
+Install python >= 3.10 and run `pip install -e .`.
 Since ONNX cannot find locally installed CUDA libraries, you must run
-```source setup_cuda.sh``` once to populate the ```LD_LIBRARY_PATH``` environment
+`source setup_cuda.sh` once to populate the `LD_LIBRARY_PATH` environment
 variable with the correct library paths.
 
 ### Run on docker
 
-Simply run ```./run_docker.sh``` to launch the docker container.
+Simply run `./run_docker.sh` to launch the docker container.
 The first time it is executed, the script will build the docker image.
 To use CUDA inside the docker container, install the
 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
@@ -43,7 +43,7 @@ python scripts/detect_faces.py <VIDEO_FILE>
 ./run_docker.sh <VIDEO_FILE>
 ```
 
-This creates a JSON annotation file with the same name as ```<VIDEO_FILE>```.
+This creates a JSON annotation file with the same name as `<VIDEO_FILE>`.
 The annotations follow this structure:
 
 ```
@@ -81,20 +81,20 @@ python scripts/detect_faces.py <DIR_PATH> --recursive
 ./run_docker.sh <DIR_PATH> --recursive
 ```
 
-For more usage information, run the script with the ```--help``` flag.
+For more usage information, run the script with the `--help` flag.
 
 ## Other functionalities
 
-The directory ```scripts``` contains more useful programs for processing video
+The directory `scripts` contains more useful programs for processing video
 datasets:
 
-- ```crop_faces.py```: after computing JSON annotation files, you can use this
+- `crop_faces.py`: after computing JSON annotation files, you can use this
 script to crop the detected faces and save them as image files.
-- ```reduce_size.py```: tool to post-process the JSON annotations by rounding
+- `reduce_size.py`: tool to post-process the JSON annotations by rounding
 floating point numbers.
-- ```trim_faces.py```: remove faces from JSON annotation files with less than a
+- `trim_faces.py`: remove faces from JSON annotation files with less than a
 number of annotated frames. Useful to remove faulty detections.
-- ```view_annotations.py```: visualize detections on a video file. If only a
+- `view_annotations.py`: visualize detections on a video file. If only a
 video file is provided, detections are computed without creating annotation
 files.
 

@@ -2,7 +2,11 @@ from pathlib import Path
 from typing import Sequence
 
 
-def find(path: Path, pattern: str | Sequence[str] | None = None, recursive: bool = False) -> list[Path]:
+def find(
+    path: Path,
+    pattern: str | Sequence[str] | None = None,
+    recursive: bool = False,
+) -> list[Path]:
     if isinstance(pattern, str):
         pattern = [pattern]
 
@@ -17,4 +21,3 @@ def find(path: Path, pattern: str | Sequence[str] | None = None, recursive: bool
             file_list.append(file)
 
     return file_list
-
